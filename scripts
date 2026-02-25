@@ -1,0 +1,37 @@
+
+FOLDER_NAME="check"
+COUNT=5000
+EMAIL="157451540+gold-silver-copper@users.noreply.github.com"
+
+mkdir -p "$FOLDER_NAME" && cd "$FOLDER_NAME"
+git init
+git config user.email "$EMAIL"
+git config user.name "gold-silver-copper"
+
+# Generate fast-import stream (all commits within last 365 days)
+{
+  echo "commit refs/heads/main"
+  echo "committer gold-silver-copper <$EMAIL> 0 +0000"
+  echo "data 4"
+  echo "init"
+  echo ""
+  
+  for i in $(seq 1 $COUNT); do
+    DAYS_AGO=$((RANDOM % 365))
+    HOUR=$((RANDOM % 24))
+    MIN=$((RANDOM % 60))
+    SEC=$((RANDOM % 60))
+    TIMESTAMP=$(( $(date +%s) - DAYS_AGO * 86400 + HOUR * 3600 + MIN * 60 + SEC ))
+    
+    echo "commit refs/heads/main"
+    echo "mark :$i"
+    echo "committer gold-silver-copper <$EMAIL> $TIMESTAMP +0000"
+    echo "data $((${#i} + 1))"
+    echo "c$i"
+    echo ""
+    (( i % 5000 == 0 )) && echo "$i / $COUNT" >&2
+  done
+} | git fast-import --quiet
+
+git checkout main 2>/dev/null
+echo "Done! Created $COUNT commits within the last year"
